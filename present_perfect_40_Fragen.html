@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Present Perfect Kahoot-Style Quiz</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#46178f,#25076b);color:white;min-height:100vh}
+.container{max-width:980px;margin:0 auto;padding:18px}
+.header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-size:2.2rem;margin:14px 0}
+.badge{background:#fff;color:#46178f;border-radius:999px;padding:10px 16px;font-weight:bold}
+.card{background:white;color:#222;border-radius:28px;padding:24px;box-shadow:0 12px 30px rgba(0,0,0,.35);margin-top:14px}
+.meta{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:14px;color:#555;font-weight:bold}
+.progress{height:14px;background:#ddd;border-radius:999px;overflow:hidden}
+.bar{height:100%;background:#22c55e;width:0%}
+.q{font-size:1.55rem;font-weight:bold;line-height:1.35;margin:18px 0}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn{border:none;border-radius:18px;padding:20px 14px;color:white;font-size:1.05rem;font-weight:bold;cursor:pointer;min-height:74px;transition:.15s;touch-action:manipulation}
+.btn:hover{transform:scale(1.02)}
+.red{background:#e21b3c}.blue{background:#1368ce}.yellow{background:#d89e00;color:#111}.green{background:#26890c}.purple{background:#7b2cbf}
+.correct{outline:6px solid #00c853!important;filter:brightness(1.08)}
+.wrong{outline:6px solid #ff1744!important;filter:grayscale(.2)}
+input{width:100%;font-size:1.2rem;padding:16px;border-radius:14px;border:2px solid #ddd;margin:8px 0 14px}
+.next{margin-top:18px;background:#111;color:white;border:none;border-radius:16px;padding:15px 28px;font-size:1.05rem;font-weight:bold;cursor:pointer}
+.feedback{font-size:1.1rem;margin-top:16px;padding:14px;border-radius:14px;background:#f1f5f9}
+.wordbank,.dropzone{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;padding:12px;border-radius:16px;background:#f1f5f9;min-height:62px}
+.chip{background:#46178f;color:white;border:none;border-radius:999px;padding:12px 18px;font-size:1rem;font-weight:bold;cursor:pointer}
+.dropzone{border:3px dashed #aaa;background:#fff}
+.small{font-size:.95rem;color:#666}
+.matchgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.matchitem{padding:14px;border-radius:14px;background:#f1f5f9;border:2px solid transparent;cursor:pointer}
+.selected{border-color:#46178f;background:#ede9fe}
+.done{opacity:.45;text-decoration:line-through}
+.end{font-size:2rem;text-align:center}
+@media(max-width:700px){.answers,.matchgrid{grid-template-columns:1fr}.q{font-size:1.3rem}h1{font-size:1.7rem}.card{padding:18px}.btn{min-height:64px}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>⚡ Present Perfect Challenge</h1>
+    <div class="badge">Kahoot-Style · 40 Fragen</div>
+  </div>
+  <div class="card">
+    <div class="meta">
+      <div id="count"></div>
+      <div id="score"></div>
+    </div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+    <div id="question" class="q"></div>
+    <div id="area"></div>
+    <button id="next" class="next" onclick="nextQuestion()" style="display:none">Weiter ➜</button>
+  </div>
+</div>
+<script>
+const quiz = [{"type": "mc", "q": "Choose the correct sentence.", "options": ["I have saw this film.", "I have seen this film.", "I has seen this film.", "I have see this film."], "answer": 1, "explain": "Present perfect: have/has + past participle. See → seen."}, {"type": "mc", "q": "Which signal word often goes with the present perfect?", "options": ["yesterday", "last week", "already", "in 2019"], "answer": 2, "explain": "Already is often used with the present perfect."}, {"type": "tf", "q": "True or false? “Did you have finished your homework?” is correct.", "answer": false, "explain": "Correct: Have you finished your homework?"}, {"type": "write", "q": "Complete: She ______ never ______ (be) to London.", "answers": ["has been"], "explain": "She has never been to London."}, {"type": "order", "q": "Put the words in the correct order.", "words": ["have", "I", "my", "lost", "keys"], "answer": ["I", "have", "lost", "my", "keys"], "explain": "I have lost my keys."}, {"type": "match", "q": "Match the sentence halves.", "left": ["I have never", "She has already", "Have you ever", "They haven’t"], "right": ["been to Canada.", "finished her project.", "tried sushi?", "seen this film."], "pairs": [0, 1, 2, 3], "explain": "Pay attention to word order with ever/never/already."}, {"type": "detective", "q": "Time detective: Which tense fits best? “I ______ my homework, so I can play now.”", "options": ["finished yesterday", "have finished", "finish", "was finishing"], "answer": 1, "explain": "Result now: I have finished."}, {"type": "regular", "q": "Regular or irregular? “visited”", "answer": "regular", "explain": "Visit is regular: visited."}, {"type": "dialog", "q": "Complete the dialogue:<br><b>A:</b> Have you seen my phone?<br><b>B:</b> No, I ______.", "answers": ["haven't", "have not"], "explain": "Short answer: No, I haven’t."}, {"type": "spot", "q": "Spot the present perfect verbs:<br><b>Tom has eaten breakfast, but he hasn’t drunk any coffee.</b>", "answers": ["has eaten", "hasn't drunk", "has not drunk"], "explain": "Present perfect forms: has eaten / hasn’t drunk."}, {"type": "mc", "q": "Choose the correct question.", "options": ["Have you ever been to Paris?", "Did you ever been to Paris?", "Have you ever went to Paris?", "Has you ever been to Paris?"], "answer": 0, "explain": "Have you ever been...?"}, {"type": "write", "q": "Write the past participle of <b>go</b>.", "answers": ["gone"], "explain": "Go → went → gone."}, {"type": "tf", "q": "True or false? “She has bought a new bike.” is correct.", "answer": true, "explain": "Buy → bought → bought."}, {"type": "order", "q": "Put the words in the correct order.", "words": ["never", "has", "He", "football", "played"], "answer": ["He", "has", "never", "played", "football"], "explain": "He has never played football."}, {"type": "match", "q": "Match infinitive and past participle.", "left": ["write", "eat", "take", "break"], "right": ["written", "eaten", "taken", "broken"], "pairs": [0, 1, 2, 3], "explain": "These are common irregular participles."}, {"type": "detective", "q": "Present perfect or simple past? “I ______ to Spain in 2022.”", "options": ["have been", "has been", "went", "have gone"], "answer": 2, "explain": "A finished time in the past: simple past."}, {"type": "dialog", "q": "Complete:<br><b>A:</b> Has she called you?<br><b>B:</b> Yes, she ______.", "answers": ["has"], "explain": "Short answer: Yes, she has."}, {"type": "regular", "q": "Regular or irregular? “broken”", "answer": "irregular", "explain": "Break → broke → broken."}, {"type": "spot", "q": "Spot the present perfect verb:<br><b>We have lived here for ten years.</b>", "answers": ["have lived"], "explain": "Have lived is present perfect."}, {"type": "lie", "q": "Two truths and one lie: Which sentence is WRONG?", "options": ["I have never eaten sushi.", "She has already finished.", "They has visited London."], "answer": 2, "explain": "Correct: They have visited London."}, {"type": "mc", "q": "Choose the correct sentence with <b>since</b>.", "options": ["I have known him since 2020.", "I know him since 2020.", "I knew him since 2020.", "I have knew him since 2020."], "answer": 0, "explain": "Since + starting point: present perfect."}, {"type": "write", "q": "Complete: We ______ ______ this teacher for two years. (know)", "answers": ["have known"], "explain": "We have known this teacher for two years."}, {"type": "tf", "q": "True or false? “For” is used with a period of time, e.g. for three days.", "answer": true, "explain": "For = duration; since = starting point."}, {"type": "order", "q": "Put the words in the correct order.", "words": ["finished", "yet", "you", "Have"], "answer": ["Have", "you", "finished", "yet"], "explain": "Have you finished yet?"}, {"type": "match", "q": "Match the signal word with the idea.", "left": ["since", "for", "ever", "yet"], "right": ["starting point", "duration", "at any time in your life", "until now / in questions and negatives"], "pairs": [0, 1, 2, 3], "explain": "These signal words are very typical."}, {"type": "detective", "q": "Choose the best tense: “She ______ three emails today.”", "options": ["wrote yesterday", "has written", "write", "has wrote"], "answer": 1, "explain": "Today is not finished yet; result/count until now."}, {"type": "dialog", "q": "Complete:<br><b>A:</b> Have they arrived yet?<br><b>B:</b> No, they ______.", "answers": ["haven't", "have not"], "explain": "No, they haven’t."}, {"type": "regular", "q": "Regular or irregular? “studied”", "answer": "regular", "explain": "Study → studied."}, {"type": "spot", "q": "Spot the present perfect verbs:<br><b>I’ve cleaned my room and I’ve done the dishes.</b>", "answers": ["i've cleaned", "i have cleaned", "i've done", "i have done"], "explain": "I’ve = I have."}, {"type": "transform", "q": "Change into a negative sentence:<br><b>She has finished the test.</b>", "answers": ["she hasn't finished the test", "she has not finished the test"], "explain": "Negative: has not / hasn’t + past participle."}, {"type": "mc", "q": "Which answer is correct? “Have you ever ______ a horse?”", "options": ["ride", "rode", "ridden", "rided"], "answer": 2, "explain": "Ride → rode → ridden."}, {"type": "write", "q": "Complete: He ______ just ______ home. (come)", "answers": ["has come"], "explain": "He has just come home."}, {"type": "tf", "q": "True or false? “I have lived here since five years” is correct.", "answer": false, "explain": "Correct: for five years OR since 2021."}, {"type": "order", "q": "Put the words in the correct order.", "words": ["already", "has", "She", "the", "book", "read"], "answer": ["She", "has", "already", "read", "the", "book"], "explain": "She has already read the book."}, {"type": "match", "q": "Match sentence and meaning.", "left": ["He has gone to Berlin.", "He has been to Berlin.", "She has lost her keys.", "They have just arrived."], "right": ["He is there now or on the way.", "He visited Berlin before.", "She doesn’t have them now.", "They arrived a moment ago."], "pairs": [0, 1, 2, 3], "explain": "Gone = weg / dort; been = war schon einmal dort."}, {"type": "detective", "q": "Present perfect or simple past? “We ______ this film last night.”", "options": ["have watched", "watched", "has watched", "have watch"], "answer": 1, "explain": "Last night = finished past time → simple past."}, {"type": "dialog", "q": "Complete:<br><b>A:</b> Have you done the shopping?<br><b>B:</b> Yes, I ______ already ______ it.", "answers": ["have done"], "explain": "Yes, I have already done it."}, {"type": "regular", "q": "Regular or irregular? “taken”", "answer": "irregular", "explain": "Take → took → taken."}, {"type": "spot", "q": "Spot the present perfect verb:<br><b>My sister hasn’t found her glasses yet.</b>", "answers": ["hasn't found", "has not found"], "explain": "Hasn’t found = present perfect negative."}, {"type": "lie", "q": "Two truths and one lie: Which sentence is WRONG?", "options": ["We have been here for an hour.", "He has just left.", "I have went home."], "answer": 2, "explain": "Correct: I have gone home."}];
+let i=0, score=0, locked=false;
+let orderSelected=[], matchLeft=null, matchMade=0;
+
+const qEl=document.getElementById('question');
+const area=document.getElementById('area');
+const nextBtn=document.getElementById('next');
+const countEl=document.getElementById('count');
+const scoreEl=document.getElementById('score');
+const bar=document.getElementById('bar');
+
+function norm(s){return (s||'').toLowerCase().trim().replace(/[.!?]/g,'').replace(/\s+/g,' ').replace(/’/g,"'");}
+function setTop(){
+ countEl.textContent = i<quiz.length ? `Frage ${i+1} / ${quiz.length}` : 'Fertig';
+ scoreEl.textContent = `Punkte: ${score}`;
+ bar.style.width = `${(i/quiz.length)*100}%`;
+}
+function render(){
+ locked=false; orderSelected=[]; matchLeft=null; matchMade=0;
+ nextBtn.style.display='none'; area.innerHTML=''; setTop();
+ const q=quiz[i]; qEl.innerHTML=q.q;
+ if(['mc','detective','lie'].includes(q.type)) renderMC(q);
+ if(q.type==='tf') renderTF(q);
+ if(['write','dialog','spot','transform'].includes(q.type)) renderWrite(q);
+ if(q.type==='regular') renderRegular(q);
+ if(q.type==='order') renderOrder(q);
+ if(q.type==='match') renderMatch(q);
+}
+function feedback(ok, text){
+ const div=document.createElement('div');
+ div.className='feedback';
+ div.innerHTML=(ok?'✅ ':'❌ ')+text;
+ area.appendChild(div);
+ nextBtn.style.display='inline-block';
+}
+function renderMC(q){
+ const wrap=document.createElement('div'); wrap.className='answers';
+ q.options.forEach((op,idx)=>{
+  const b=document.createElement('button'); b.className='btn '+['red','blue','yellow','green'][idx%4]; b.textContent=op;
+  b.onclick=()=>{ if(locked)return; locked=true; [...wrap.children].forEach(x=>x.disabled=true);
+   if(idx===q.answer){score++; b.classList.add('correct'); feedback(true,q.explain);}
+   else{b.classList.add('wrong'); wrap.children[q.answer].classList.add('correct'); feedback(false,q.explain);}
+   setTop();
+  };
+  wrap.appendChild(b);
+ });
+ area.appendChild(wrap);
+}
+function renderTF(q){
+ const wrap=document.createElement('div'); wrap.className='answers';
+ [['True',true,'blue'],['False',false,'red']].forEach(([label,val,color])=>{
+  const b=document.createElement('button'); b.className='btn '+color; b.textContent=label;
+  b.onclick=()=>{if(locked)return; locked=true; [...wrap.children].forEach(x=>x.disabled=true);
+    if(val===q.answer){score++; b.classList.add('correct'); feedback(true,q.explain);}
+    else{b.classList.add('wrong'); feedback(false,q.explain);}
+    setTop();
+  };
+  wrap.appendChild(b);
+ });
+ area.appendChild(wrap);
+}
+function renderWrite(q){
+ const inp=document.createElement('input'); inp.placeholder='Antwort eingeben ...';
+ const b=document.createElement('button'); b.className='btn green'; b.textContent='Prüfen';
+ b.onclick=()=>{if(locked)return; locked=true; inp.disabled=true; b.disabled=true;
+   const val=norm(inp.value);
+   const ok=q.answers.some(a=> val===norm(a) || (q.type==='spot' && val.includes(norm(a))));
+   if(ok){score++; feedback(true,q.explain);} else {feedback(false,`Mögliche Lösung: <b>${q.answers[0]}</b><br>${q.explain}`);}
+   setTop();
+ };
+ area.appendChild(inp); area.appendChild(b);
+}
+function renderRegular(q){
+ const wrap=document.createElement('div'); wrap.className='answers';
+ [['regular','blue'],['irregular','purple']].forEach(([val,color])=>{
+  const b=document.createElement('button'); b.className='btn '+color; b.textContent=val;
+  b.onclick=()=>{if(locked)return; locked=true; [...wrap.children].forEach(x=>x.disabled=true);
+    if(val===q.answer){score++; b.classList.add('correct'); feedback(true,q.explain);}
+    else{b.classList.add('wrong'); feedback(false,q.explain);}
+    setTop();
+  };
+  wrap.appendChild(b);
+ });
+ area.appendChild(wrap);
+}
+function renderOrder(q){
+ const bank=document.createElement('div'); bank.className='wordbank';
+ const zone=document.createElement('div'); zone.className='dropzone'; zone.innerHTML='<span class="small">Klicke die Wörter in der richtigen Reihenfolge an.</span>';
+ const check=document.createElement('button'); check.className='btn green'; check.textContent='Reihenfolge prüfen';
+ q.words.forEach(w=>{
+  const c=document.createElement('button'); c.className='chip'; c.textContent=w;
+  c.onclick=()=>{ if(locked||c.disabled)return; c.disabled=true; c.style.opacity=.4; orderSelected.push(w);
+    if(zone.querySelector('.small')) zone.innerHTML='';
+    const z=document.createElement('span'); z.className='chip'; z.textContent=w; zone.appendChild(z);
+  };
+  bank.appendChild(c);
+ });
+ check.onclick=()=>{if(locked)return; locked=true;
+  const ok=norm(orderSelected.join(' '))===norm(q.answer.join(' '));
+  if(ok){score++; feedback(true,q.explain);} else feedback(false,`Richtig: <b>${q.answer.join(' ')}</b><br>${q.explain}`);
+  setTop();
+ };
+ area.appendChild(bank); area.appendChild(zone); area.appendChild(check);
+}
+function renderMatch(q){
+ const info=document.createElement('div'); info.className='small'; info.textContent='Klicke links einen Satzanfang und dann rechts das passende Ende an.';
+ const grid=document.createElement('div'); grid.className='matchgrid';
+ const lcol=document.createElement('div'), rcol=document.createElement('div');
+ q.left.forEach((txt,idx)=>{
+  const d=document.createElement('div'); d.className='matchitem'; d.textContent=txt; d.dataset.idx=idx;
+  d.onclick=()=>{ if(locked||d.classList.contains('done'))return; [...lcol.children].forEach(x=>x.classList.remove('selected')); d.classList.add('selected'); matchLeft=idx; };
+  lcol.appendChild(d);
+ });
+ q.right.forEach((txt,idx)=>{
+  const d=document.createElement('div'); d.className='matchitem'; d.textContent=txt; d.dataset.idx=idx;
+  d.onclick=()=>{ if(locked||matchLeft===null||d.classList.contains('done'))return;
+    if(q.pairs[matchLeft]===idx){ lcol.children[matchLeft].classList.add('done'); d.classList.add('done'); matchMade++; matchLeft=null; [...lcol.children].forEach(x=>x.classList.remove('selected'));
+      if(matchMade===q.left.length){locked=true; score++; feedback(true,q.explain); setTop();}
+    } else { locked=true; feedback(false,'Nicht ganz. '+q.explain); setTop(); }
+  };
+  rcol.appendChild(d);
+ });
+ grid.appendChild(lcol); grid.appendChild(rcol);
+ area.appendChild(info); area.appendChild(grid);
+}
+function nextQuestion(){ i++; if(i<quiz.length) render(); else end(); }
+function end(){
+ bar.style.width='100%'; qEl.innerHTML='🏆 Fertig!';
+ area.innerHTML=`<div class="end">Du hast <b>${score}</b> von <b>${quiz.length}</b> Punkten erreicht.<br><br>${score>=34?'🔥 Super!':score>=25?'👏 Gut gemacht!':'💪 Weiter üben!'}</div>`;
+ nextBtn.style.display='none'; setTop();
+}
+render();
+</script>
+</body>
+</html>
